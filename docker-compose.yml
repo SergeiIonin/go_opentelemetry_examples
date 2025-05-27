@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: go-app
+    ports:
+      - "8888:8888"
+    depends_on:
+      - otel-collector
+    environment:
+      - PORT=8888
+      - OTEL_EXPORTER_OTLP_ENDPOINT=otel-collector:4317
+      - STATSD_ADDR=otel-collector:8125
+    networks:
+      - app-network
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "8125:8125/udp"   # StatsD receiver
+      - "4317:4317"       # OTLP gRPC receiver
+      - "4318:4318"       # OTLP HTTP receiver
+      - "13133:13133"     # Health check extension
+      - "55679:55679"     # zPages extension
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

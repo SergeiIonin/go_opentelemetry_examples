@@ -1,0 +1,47 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  
+  statsd:
+    endpoint: 0.0.0.0:8125
+    aggregation_interval: 1s
+
+processors:
+  batch:
+    timeout: 1s
+  
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1000
+    spike_limit_mib: 200
+
+exporters:
+  debug:
+    verbosity: detailed
+  
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: ginapp
+
+extensions:
+  health_check:
+  pprof:
+  zpages:
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    metrics:
+      receivers: [otlp, statsd]
+      processors: [memory_limiter, batch]
+      exporters: [debug, prometheus]
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [debug]
